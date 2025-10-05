@@ -1,4 +1,3 @@
-# rag_logic.py
 import os
 from langchain_community.document_loaders import PyMuPDFLoader, Docx2txtLoader, TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -16,7 +15,6 @@ from langchain_core.prompts.chat import (
 
 class RAGPipeline:
     def __init__(self):
-        # Initialize Nomic embeddings
         self.embeddings = OllamaEmbeddings(model='nomic-embed-text:v1.5')
         self.llm = OllamaLLM(model='deepseek-v3.1:671b-cloud')
         self.qa_chain = None
@@ -41,14 +39,12 @@ class RAGPipeline:
         return docs
 
     def build_retriever(self, docs):
-        """Split and embed document for retrieval."""
         splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
         chunks = splitter.split_documents(docs)
         vector_storage = FAISS.from_documents(chunks, self.embeddings)
         return vector_storage.as_retriever()
 
     def create_qa_chain(self, retriever):
-        """Create RAG QA chain with system + human prompts."""
         system_msg = SystemMessagePromptTemplate.from_template(
             "You are GramVani — a helpful and concise AI assistant. "
             "Use the provided document content to answer the question. "
@@ -56,7 +52,6 @@ class RAGPipeline:
             "Always respond clearly and under 500 words."
         )
 
-        # Use 'input' variable to match chain expectation
         human_msg = HumanMessagePromptTemplate.from_template(
             "Document Content:\n{context}\n\nQuestion:\n{input}"
         )
@@ -66,16 +61,15 @@ class RAGPipeline:
         self.qa_chain = create_retrieval_chain(retriever, document_chain)
 
     def ask(self, query, output_language="English"):
-        """Return answer in the selected language."""
         if self.qa_chain:
             response = self.qa_chain.invoke({"input": query})
             answer = response["answer"]
         else:
             general_prompt = f"""
-You are GramVani — a helpful and concise AI assistant.
-Answer the question in {output_language} clearly and concisely.
-Question: {query}
-"""
+                You are GramVani — a helpful and concise AI assistant.
+                Answer the question in {output_language} clearly and concisely.
+                Question: {query}
+            """
             answer = self.llm.invoke(general_prompt)
 
         if output_language.lower() != "english":
